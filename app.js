@@ -1,9 +1,10 @@
+import { fetchCategories, addCategory,deleteCategory , updateCategory} from "./apiServices.js"
 // PENTING: Sesuaikan URL dan PORT ini dengan API ANDA!
-let baseUrl = 'https://localhost:7030/api'
+// let baseUrl = 'https://localhost:7030/api'
 
-let CategoryModule = 'CategoriesApi'
+// let CategoryModule = 'CategoriesApi'
 
-const apiUrl = `${baseUrl}/${CategoryModule}`
+// const apiUrl = `${baseUrl}/${CategoryModule}`
 
 // ambil elemen2 dari HTML
 
@@ -13,27 +14,22 @@ const nameInput = document.getElementById('new-category-name')
 
 //Fungsi untuk ambil data atau interaksi dengan API
 
-async function fetchCategories() {
-    console.log("mengambil data dari API...")
+async function tampilkanKategori() {
+    // console.log("mengambil data dari API...")
     
     try {
-        const response = await fetch(apiUrl);
-
-        if (!response.ok){
-            console.log('error ketika fetch API')
-            throw new Error(`Http error! status code: ${response.status}`)
-        }
-
-        const data = await response.json();
+        const data = await fetchCategories();
 
         listElement.innerHTML = '';
 
         //looping data dan tampilkan di halaman
         data.forEach(category => {
             const li = document.createElement('li');
-            
+            console.log("category" + JSON.stringify(category))
             //buat nama kategori
             const textNode = document.createTextNode(category.categoryName);
+            // console.log("categoryy name" + category.categoryName)
+            console.log("textnode : " + JSON.stringify(textNode))
             li.appendChild(textNode);
 
             //buat tombol hapus
@@ -43,21 +39,36 @@ async function fetchCategories() {
 
             //nambahin event listener
             deleteButton.addEventListener('click', () => {
-                deleteCategory(category.id);
+                handleHapus(category.id);
             });
 
             li.appendChild(deleteButton);
 
             listElement.appendChild(li);
 
+            //update section
+
+            const updateButton = document.createElement('button');
+            updateButton.textContent = 'Update';
+            updateButton.className = 'update-button';
+
+            //nambahin event listener
+            updateButton.addEventListener('click', () => {
+                handleUpdate(category.id);
+            });
+
+            li.appendChild(updateButtons);
+
+            listElement.appendChild(li);
+
         });
+        
     }catch(error){
-        console.log('gagal mengambil data, dengan error: '+ error)
         listElement.innerHTML = '<li> Gagal memuat Data. cek Console browser </li>';
     }
 }
 
-async function addCategory() {
+async function handleTambah() {
     const categoryName = nameInput.value
 
     if(!categoryName){
@@ -70,16 +81,10 @@ async function addCategory() {
     };
 
     try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-type': 'application/json'
-            },
-            body: JSON.stringify(newData)}
-        );
+        const sukses = await addCategory(categoryName);
 
-        if(response.ok){
-            fetchCategories();
+        if(sukses){
+            tampilkanKategori();
             nameInput.value = '';
         } else{
             alert(`'gagal menyimpan data`);
@@ -89,7 +94,7 @@ async function addCategory() {
     }
 }
 
-async function deleteCategory(id) {
+async function handleHapus(id) {
 
     //alert sebelum dihapus
     if(!confirm(`yakin ingin menghapus data dengan ID ${id}`)){
@@ -97,26 +102,36 @@ async function deleteCategory(id) {
     }
 
     try {
-        const response = await fetch(`${apiUrl}/${id}`, {
-            method: 'DELETE'}
-        );
-
-        if(response.ok){
-            fetchCategories();
+        const sukses = await deleteCategory(id);
+        if (sukses){
+            tampilkanKategori();
+        
         } else{
             alert(`gagal menghapus data`);
         }
 
 
     } catch (error) {
-        console.error(`Error saat menghapus data, dengan error : `+ error);
+        console.error('Terjadi error : '+ error);
     }
     
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    // This code will run as soon as the DOM is ready
-    fetchCategories()
-});
+async function handleUpdate(id, categoryName){
+    try{
+        const sukses = await updateCategory(id, categoryName);
+        if(sukses){
+            tampilkanKategori();
+        }
+        else{
+            alert('gagal memperbarui data');
+        }
+    }
+    catch(error){
+        alert('Terjadi error : '+ error)
+    }
+}
 
-addButton.addEventListener('click', addCategory);
+document.addEventListener('DOMContentLoaded', tampilkanKategori);
+
+addButton.addEventListener('click', handleTambah);
